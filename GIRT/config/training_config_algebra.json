@@ -1,0 +1,8 @@
+{
+    "device": "cuda:3",
+    "n_epoch": 10,
+    "lr": 1e-3,
+    "batch_size": 64,
+    "shuffle": true,
+    "num_workers": 4
+}
