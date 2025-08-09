@@ -5,7 +5,7 @@
   <p align="center">
     A codebase for generative (<strong>instant</strong>) cognitive diagnosis.
     <br />
-    <a href="https://github.com/CSLiJT/Generative-CD"><strong>Explore the docs »</strong></a>
+    <a href="https://arxiv.org/abs/2507.09831"><strong>Explore the paper »</strong></a>
     <br />
   </p>
 </div>
