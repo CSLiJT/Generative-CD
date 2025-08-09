@@ -1,1 +1,3 @@
-python data_prepare.py -i /data/LiJKRDT/data/math2/random_split -o /data/LiJKRDT/GenerativeCD/GIRT/data/Math2-Random-Split
+python data_prepare.py \
+-i /data/LiJKRDT/data/math2/random_split \
+-o /data/LiJKRDT/GenerativeCD/GIRT/data/Math2-Random-Split
