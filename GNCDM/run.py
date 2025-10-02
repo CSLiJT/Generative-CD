@@ -1,0 +1,90 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2025 Jiatong Li
+# All rights reserved.
+# 
+# This software is the confidential and proprietary information
+# of Jiatong Li. You shall not disclose such confidential
+# information and shall use it only in accordance with the terms of
+# the license agreement.
+
+
+
+from model_parser import parse_args
+import gc
+import json
+import matplotlib.pyplot as plt 
+import numpy as np 
+import pandas as pd 
+import torch 
+import torch.nn as nn 
+import model 
+import train 
+import sys
+import os
+from tools import degree_of_consistency
+
+def add_knowledge_code(data: pd.DataFrame, Q_mat):
+    knowledge = []
+    for i in range(data.shape[0]):
+        knowledge.append(Q_mat[data.loc[i,'item_id']])
+    data['knowledge'] = knowledge
+    return data 
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    df_train = pd.read_csv(args.train_file)
+    df_valid = pd.read_csv(args.valid_file)
+    df_test = pd.read_csv(args.test_file)
+
+    n_user = int(args.n_user)
+    n_item = int(args.n_item)
+    n_know = int(args.n_know)
+
+    Q_mat = np.load(args.Q_matrix) if args.Q_matrix !='' else np.ones((n_item, n_know))
+
+    df_train = add_knowledge_code(df_train, Q_mat)
+    df_valid = add_knowledge_code(df_valid, Q_mat)
+    df_test = add_knowledge_code(df_test, Q_mat)
+
+    # itf_type = args.itf_type
+    user_dim = int(args.user_dim)
+    item_dim = int(args.item_dim)
+    alpha = float(args.alpha)
+
+    with open(args.training_config, 'r') as fp:
+        config = json.load(fp)
+
+    batch_size = int(config['batch_size'])
+    lr = float(config['lr'])
+    epoch = int(config['n_epoch'])
+    device = torch.device(config['device'])
+    print(device)
+
+    save_path = args.save_path
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    
+    acc_all=[]
+    rmse_all=[]
+    f1_all = []
+    net = model.GNCDM(n_user, n_item, n_know, user_dim, \
+        item_dim, alpha, Q_mat = Q_mat, \
+        monotonicity_assumption = True, device=device)
+    result_all = train.train(net, df_train, df_valid, batch_size = batch_size, \
+        lr = lr, n_epoch = epoch)
+    np.save(os.path.join(save_path, 'result_all.npy'), result_all)
+    test_result = train.eval(net, df_test,batch_size=256)
+    acc_all.append(test_result['acc'])
+    rmse_all.append(test_result['rmse'])
+    f1_all.append(test_result['f1'])
+
+    with open(os.path.join(save_path, 'cmd.txt'),'w') as fp:
+        fp.write(' '.join(['python']+sys.argv))
+
+    with open(os.path.join(save_path, 'test_result.json'),'w') as fp:
+        json.dump(test_result, fp)
+
+    torch.save(net, os.path.join(save_path, 'params_%s_%s.pt'%(user_dim,item_dim)))
+    gc.collect()
+    
